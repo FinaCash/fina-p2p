@@ -61,7 +61,7 @@ pub enum ExecuteMsg {
     ResolveDeal { deal_id: Uint128 },
     CancelDeal { deal_id: Uint128 },
     AdminDeleteDeal { deal_id: Uint128 },
-    EmergencyWithdraw { deal_id: Uint128 },
+    // EmergencyWithdraw { deal_id: Uint128 },  // only for testing
     GetCommission {},
 }
 

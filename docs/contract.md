@@ -8,7 +8,7 @@ For internal review only, to avoid exploit.
 |-------------------------|--------------------------------------------|
 | query_auth             | secret1ww9r0q02x0altkdyya3f9ygnc53qc2asc2tc5g |
 | fina_token             | secret1etrc3h558yesk25j5pu835f9s84wjvjzeed6e9 |
-| p2p_contract           | secret1g3qrmfsvrnqnfs2cjvpkukmpz9ce624hdn7np9 |
+| p2p_contract           | secret13krad3479aehjqpr0r6q8y86lx83cg608hxezd |
 
 ## P2P configuration
 

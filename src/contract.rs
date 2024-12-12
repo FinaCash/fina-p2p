@@ -117,7 +117,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg
         ExecuteMsg::DisputeDeal { deal_id } => execute::dispute_deal(deps, env, info, deal_id),
         ExecuteMsg::ResolveDeal { deal_id } => execute::resolve_deal(deps, env, info, deal_id),
         ExecuteMsg::CancelDeal { deal_id } => execute::cancel_deal(deps, env, info, deal_id),
-        ExecuteMsg::EmergencyWithdraw { deal_id } => execute::emergency_withdraw(deps, env, info, deal_id),
         ExecuteMsg::AdminDeleteDeal { deal_id } => execute::admin_delete_deal(deps, env, info, deal_id),
         ExecuteMsg::GetCommission {} => execute::get_commission(deps, env, info)
     },
