@@ -10,6 +10,14 @@ For internal review only, to avoid exploit.
 | fina_token             | secret1etrc3h558yesk25j5pu835f9s84wjvjzeed6e9 |
 | p2p_contract           | secret13krad3479aehjqpr0r6q8y86lx83cg608hxezd |
 
+## List of MAINNET Preprod contract address
+
+| Key                   | Value                                   |
+|-------------------------|--------------------------------------------|
+| query_auth             | secret1tu6gjl2rsw0w3yrqqehxscn8f5uvuvzvgkmzfm |
+| fina_token             | secret1w496x0ccqxaxga6nuxlctmj94fvl3mgymw3ykc |
+| p2p_contract           |  |
+
 ## P2P configuration
 
 ```json
