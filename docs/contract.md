@@ -8,10 +8,10 @@ For internal review only, to avoid exploit.
 |-------------------------|--------------------------------------------|
 | query_auth             | secret1ww9r0q02x0altkdyya3f9ygnc53qc2asc2tc5g |
 | fina_token             | secret1etrc3h558yesk25j5pu835f9s84wjvjzeed6e9 |
-| fake_test_usdc         | secret1w496x0ccqxaxga6nuxlctmj94fvl3mgymw3ykc |
-| fake_test_scrt         | secret1jnnmw0zf9tfvfqqs7guej84fvqf8397tmyrw7f |
-| fake_test_shd          | secret1tq84uuxfjsc55k95uzktx8snku8h6qq2ht3xrh |
-| p2p_contract           | secret1jdxk5azj035mw23rpn6k2klmw0p70l867u7xtu |
+| fake_test_usdc (FFUSDC)| secret1a9xzl9m7ggynd9g9jg6xl6gpd42re3q7u60mju |
+| fake_test_scrt (FFSCRT)| secret1jnnmw0zf9tfvfqqs7guej84fvqf8397tmyrw7f |
+| fake_test_silk (FFSILK)| secret1rrdq98vmx4lavy4e0a2zpag22ehc0gjuy0ruvj |
+| p2p_contract           | secret1atmagg8w7flfrajutpfnrmdsrmkkx58hn9fdth |
 
 ## List of MAINNET Preprod contract address
 
