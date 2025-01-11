@@ -27,7 +27,9 @@ pub const USER_COOL_DOWN: Keymap<Addr, Uint128, Json> = Keymap::new(b"user_cool_
 pub struct Config {
     pub admins: Vec<Addr>,
     pub deal_commission: Uint128,  // in bps, 1 bps = 0.01% commision
-    pub deal_token: Contract,
+    pub deal_token_a: Contract,
+    pub deal_token_b: Contract,
+    pub deal_token_c: Contract,
     pub query_auth: Contract,
     pub governance: Option<Contract>,
 }
@@ -36,6 +38,7 @@ pub struct Config {
 pub struct Post {
     pub post_id: Uint128,
     pub is_dealer_buy: bool, // is dealer buying crypto
+    pub deal_token: Contract,
     pub amount: Uint128, // number of crypto, also this is the remaining of the post amount
     pub min_amount: Uint128, // min amount allowed to init the deal
     pub settle_currency: String,
@@ -51,6 +54,7 @@ pub struct Deal {
     pub deal_id: Uint128,
     pub post_id: Uint128,  // corresponding post that associated with the deal
     pub is_dealer_buy: bool, // is dealer buying crypto
+    pub deal_token: Contract,
     pub amount: Uint128, // number of crypto
     pub settle_currency: String,
     pub settle_price: Uint128,

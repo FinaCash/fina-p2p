@@ -8,13 +8,15 @@ A P2P deal is implemented and can be described in the following schema
 pub struct Post {
     pub post_id: Uint128,
     pub is_dealer_buy: bool,
+    pub deal_token: Contract,
     pub amount: Uint128,
-    pub min_amount: Uint128,
+    pub min_amount: Uint128, 
     pub settle_currency: String,
     pub settle_price: Uint128,
     pub dealer_deposit: bool,
     pub dealer: Addr,
     pub state: PostState,
+    pub expiry: Uint128,
 }
 ```
 
@@ -22,6 +24,7 @@ pub struct Post {
 |-------|-------------|
 | post_id | unique ID per each post |
 | is_dealer_buy | `True` if dealer is buying crypto from customer in the deal, vice versa |
+| deal_token | Snip-25 token that's traded |
 | amount | Num. of token in this post |
 | min_amount | Minimum num. of token a customer can trade with the dealer |
 | settle_currency | The currency in this deal (e.g. USD) |
@@ -35,6 +38,7 @@ pub struct Deal {
     pub deal_id: Uint128,
     pub post_id: Uint128,
     pub is_dealer_buy: bool, // is dealer buying crypto
+    pub deal_token: Contract,
     pub amount: Uint128,
     pub settle_currency: String,
     pub settle_price: Uint128,
@@ -53,6 +57,7 @@ pub struct Deal {
 | deal_id | unique ID per each deal |
 | post_id | ID of the associated post |
 | is_dealer_buy | `True` if dealer is buying crypto from customer in the deal, vice versa |
+| deal_token | Snip-25 token that's traded |
 | amount | Num. of token in this deal, see [Calculation of transfer amount](#calculation-of-transfer-amount) below |
 | settle_currency | The currency in this deal (e.g. USD) |
 | settle_price | Price per each `deal_token` |
@@ -66,11 +71,11 @@ pub struct Deal {
 
 ## Calculation of transfer amount
 
-P2P contract is pre-set with a `deal_token`, e.g. SILK token.
+P2P contract is pre-set with several `deal_token`, e.g. SILK token.
 
-`amount` refers to how many `deal_token` is dealer buying / selling. Note that this value is `Uint128`. By following the snip-20 convention, this number needs to be divided by 1,000,000 to represent the correct value.
+`amount` refers to how many `deal_token` is dealer buying / selling. Note that this value is `Uint128`. By following the snip-25 convention, this number needs to be divided by 1,000,000 to represent the correct value.
 
-`settle_price` refers to the price per each `deal_token`. Note that this value is `Uint128`. By following the snip-20 convention, this number needs to be divided by 1,000,000 to represent the correct value.
+`settle_price` refers to the price per each `deal_token`. Note that this value is `Uint128`. By following the snip-25 convention, this number needs to be divided by 1,000,000 to represent the correct value.
 
 (`amount` / 1,000,000 ) * ( `settle_price` / 1,000,000 ) = how much does counterpart need to wire transfer in the basis of the `settle_currency`. Or in other word, Wire transfer amount = `amount` * `settle_price` / 1_000_000_000_000.
 

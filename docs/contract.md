@@ -8,7 +8,10 @@ For internal review only, to avoid exploit.
 |-------------------------|--------------------------------------------|
 | query_auth             | secret1ww9r0q02x0altkdyya3f9ygnc53qc2asc2tc5g |
 | fina_token             | secret1etrc3h558yesk25j5pu835f9s84wjvjzeed6e9 |
-| p2p_contract           | secret13krad3479aehjqpr0r6q8y86lx83cg608hxezd |
+| fake_test_usdc         | secret1w496x0ccqxaxga6nuxlctmj94fvl3mgymw3ykc |
+| fake_test_scrt         | secret1jnnmw0zf9tfvfqqs7guej84fvqf8397tmyrw7f |
+| fake_test_shd          | secret1tq84uuxfjsc55k95uzktx8snku8h6qq2ht3xrh |
+| p2p_contract           | secret1jdxk5azj035mw23rpn6k2klmw0p70l867u7xtu |
 
 ## List of MAINNET Preprod contract address
 
@@ -27,10 +30,18 @@ For internal review only, to avoid exploit.
          "admins":[
             "secret1t6v5pv9jgddv4t43gdzz348desfsy9727ngfcc"
          ],
-         "deal_commission":"1",
-         "deal_token":{
+         "deal_commission":"0",
+         "deal_token_a":{
             "address":"secret1etrc3h558yesk25j5pu835f9s84wjvjzeed6e9",
             "code_hash":"681c588acfa0d3ccaa4c6a798813d4d1bf3f719159ba3bd03c0c5e5a1e26a05e"
+         },
+         "deal_token_b":{
+            "address":"secret1mqjlzvnl2cvm47azsj269tunmvx2l4974hjzku",
+            "code_hash":"dfe39bda03bf73a887c7a7b3153dbde332454353d8bd3a4a42692bd607187441"
+         },
+         "deal_token_c":{
+            "address":"secret15r29qflwp3ngn3mlc4gdz2yjn4lnxr605mnrra",
+            "code_hash":"dfe39bda03bf73a887c7a7b3153dbde332454353d8bd3a4a42692bd607187441"
          },
          "query_auth":{
             "address":"secret1ww9r0q02x0altkdyya3f9ygnc53qc2asc2tc5g",
@@ -46,7 +57,7 @@ For internal review only, to avoid exploit.
 |-------------------------|--------------------------------------------|
 | admin             | Address of the admin |
 | deal_commission   | expressed in bps. For example, when commission == `1`, it means we will take 0.01% of the entire deal amount as commission |
-| deal_token        | Address of the snip-20 token that users are dealing within this p2p contract |
+| deal_token        | Address of the snip-20 token that users are dealing within this p2p contract, currently there are 3 tokens |
 | query_auth        | Address of the query auth contract that provides privacy feature |
 | governance        | Address of the governance contract. When this is available, it will take over execution function that's control by admin (See [below](#admin-execution-functions)) |
 
@@ -97,6 +108,8 @@ Note Dealer needs to register his payment info first before he is able to add a 
 
 ```bash
 IS_BUY=false
+DEAL_TOKEN="secret1mqjlzvnl2cvm47azsj269tunmvx2l4974hjzku"
+DEAL_TOKEN_HASH=$(secretcli query compute contract-hash "${DEAL_TOKEN}" | tail -c +3)
 AMOUNT=3000000
 MIN_AMOUNT=1000000
 SETTLE_CURRENCY="USD"
@@ -106,6 +119,7 @@ secretcli tx compute execute "$P2P_CONTRACT" \
 	'{
 		"add_post": {
 			"is_dealer_buy": '"$IS_BUY"',
+			"deal_token": {"address": "'"$DEAL_TOKEN"'","code_hash": "'"$DEAL_TOKEN_HASH"'"},
 			"amount": "'"$AMOUNT"'",
 			"min_amount": "'"$MIN_AMOUNT"'",
 			"settle_currency": "'"$SETTLE_CURRENCY"'",
@@ -151,6 +165,8 @@ Deal state is now `Open`.
 
 ```bash
 IS_BUY=true
+DEAL_TOKEN="secret1mqjlzvnl2cvm47azsj269tunmvx2l4974hjzku"
+DEAL_TOKEN_HASH=$(secretcli query compute contract-hash "${DEAL_TOKEN}" | tail -c +3)
 AMOUNT=3000000
 MIN_AMOUNT=1000000
 SETTLE_CURRENCY="USD"
@@ -160,6 +176,7 @@ secretcli tx compute execute "$P2P_CONTRACT" \
 	'{
 		"add_post": {
 			"is_dealer_buy": '"$IS_BUY"',
+			"deal_token": {"address": "'"$DEAL_TOKEN"'","code_hash": "'"$DEAL_TOKEN_HASH"'"},
 			"amount": "'"$AMOUNT"'",
 			"min_amount": "'"$MIN_AMOUNT"'",
 			"settle_currency": "'"$SETTLE_CURRENCY"'",
@@ -269,6 +286,10 @@ The output not only shows the deal detail, but also the payment info of the wire
       "deal":{
          "deal_id":"1",
          "is_dealer_buy":false,
+		 "deal_token": {
+             "address":"secret1mqjlzvnl2cvm47azsj269tunmvx2l4974hjzku",
+             "code_hash":"dfe39bda03bf73a887c7a7b3153dbde332454353d8bd3a4a42692bd607187441"
+         },
          "amount":"2000000",
          "settle_currency":"USD",
          "settle_price":"1000000",

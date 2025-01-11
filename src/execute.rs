@@ -58,7 +58,9 @@ pub fn update_deal_token(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    deal_token: RawContract,
+    deal_token_a: RawContract,
+    deal_token_b: RawContract,
+    deal_token_c: RawContract,
 ) -> Result<Response, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
@@ -75,7 +77,9 @@ pub fn update_deal_token(
         return Err(ContractError::Unauthorized {});
     }
 
-    config.deal_token = deal_token.into_valid(deps.api)?;
+    config.deal_token_a = deal_token_a.into_valid(deps.api)?;
+    config.deal_token_b = deal_token_b.into_valid(deps.api)?;
+    config.deal_token_c = deal_token_c.into_valid(deps.api)?;
 
     CONFIG.save(deps.storage, &config)?;
 
@@ -195,13 +199,6 @@ pub fn receive(
     match msg {
         Some(m) => match from_binary(&m)? {
             DepositAction::Customer { deal_id } => {
-                let config = CONFIG.load(deps.storage)?;
-
-                // Check if user is paying the correct snip token for deal making
-                if info.sender != config.deal_token.address {
-                    return Err(ContractError::InvalidDealToken {});
-                }
-
                 let mut active_deals = ACTIVE_DEALS.load(deps.storage)?;
 
                 match active_deals.iter_mut().find(|x| x.deal_id == deal_id) {
@@ -222,6 +219,11 @@ pub fn receive(
                             return Err(ContractError::MismatchCustomer {});
                         }
 
+                        // check if user is paying the correct snip token for deal making
+                        if info.sender != deal.deal_token.address {
+                            return Err(ContractError::InvalidDealToken {});
+                        }
+
                         deal.customer_deposit = true;
                         deal.state = DealState::PendDealerBankTransfer;
                         deal.expiry = Some(now + DEAL_EXPIRY_TIME);
@@ -240,13 +242,6 @@ pub fn receive(
                 }
             }
             DepositAction::Dealer { post_id } => {
-                let config = CONFIG.load(deps.storage)?;
-
-                // Check if user is paying the correct snip token for deal making
-                if info.sender != config.deal_token.address {
-                    return Err(ContractError::InvalidDealToken {});
-                }
-
                 let mut active_posts = ACTIVE_POSTS.load(deps.storage)?;
 
                 match active_posts.iter_mut().find(|x| x.post_id == post_id) {
@@ -267,6 +262,12 @@ pub fn receive(
                             return Err(ContractError::MismatchDealer {});
                         }
 
+                        // check if user is paying the correct snip token for deal making
+                        let deal_token = post.deal_token.address.clone();
+                        if info.sender != deal_token {
+                            return Err(ContractError::InvalidDealToken {});
+                        }
+
                         post.dealer_deposit = true;
                         post.state = PostState::Open;
 
@@ -274,8 +275,10 @@ pub fn receive(
                         ACTIVE_POSTS.save(deps.storage, &active_posts.clone())?;
 
                         Ok(
-                            Response::new().set_data(to_binary(&ExecuteAnswer::CustomerDeposit {
+                            Response::new().set_data(to_binary(&ExecuteAnswer::DealerDeposit {
                                 status: ResponseStatus::Success,
+                                sender: info.sender,
+                                deposit_token: deal_token,
                             })?)
                         )
                     },
@@ -296,10 +299,11 @@ pub fn add_post(
     env: Env,
     info: MessageInfo,
     is_dealer_buy: bool,  // is dealer buying crypto or selling crypto.
+    deal_token: RawContract,
     amount: Uint128,  // number of crypto, 1_000_000 = 1 crypto
     min_amount: Uint128,
     settle_currency: String,  // currency of the trade
-    settle_price: Uint128
+    settle_price: Uint128,
 ) -> Result<Response, ContractError> {
     // let support_currencies = vec![
     //     "HKD".to_string(),
@@ -344,9 +348,18 @@ pub fn add_post(
     let now = Uint128::new(env.block.time.seconds() as u128);
     let expiry = now + POST_EXPIRY_TIME;
 
+    let deal_token_valid = deal_token.into_valid(deps.api)?;
+
+    let config = CONFIG.load(deps.storage)?;
+
+    if deal_token_valid != config.deal_token_a && deal_token_valid != config.deal_token_b && deal_token_valid != config.deal_token_c {
+        return Err(ContractError::InvalidDealToken {});
+    }
+
     active_posts.push(Post {
         post_id: new_id.clone(),
         is_dealer_buy: is_dealer_buy,
+        deal_token: deal_token_valid,
         amount: amount,
         min_amount: min_amount,
         settle_currency: settle_currency,
@@ -354,7 +367,7 @@ pub fn add_post(
         dealer_deposit: false,
         dealer: info.sender.clone(),
         state: init_state,
-        expiry: expiry
+        expiry: expiry,
     });
 
     ACTIVE_POSTS.save(deps.storage, &active_posts)?;
@@ -400,14 +413,17 @@ pub fn cancel_post(
             // If deal is open, it could mean dealer has already deposit crypto 
             // if he wants to sell, we need to refund
             if post.dealer_deposit {
+                // get the deal token detail first
+                let deal_token = post.deal_token.clone();
+
                 cosmos_msg = Some(transfer_msg(
                     post.dealer.clone().into_string(),
                     post.amount,
                     None,
                     None, 
                     RESPONSE_BLOCK_SIZE,
-                    config.deal_token.code_hash,
-                    config.deal_token.address.into_string()
+                    deal_token.code_hash,
+                    deal_token.address.into_string()
                 )?);
             }
         },
@@ -452,15 +468,6 @@ pub fn enter_deal(
     const SUPPORT_STATES: [PostState;  1] = [
         PostState::Open
     ];
-
-    // Check if customer has other deal
-    let has_other_deal = active_deals
-        .iter()
-        .any(|x| x.customer.clone() == info.sender.clone());
-
-    if has_other_deal {
-        return Err(ContractError::ConcurrentDealNotAllowed {});
-    }
 
     // Check if customer has already register for payment info
     let user_payment_info = USER_PAYMENT_INFO.get(deps.storage, &info.sender.clone());
@@ -512,6 +519,7 @@ pub fn enter_deal(
                 deal_id: new_id.clone(),
                 post_id: post_id.clone(),
                 is_dealer_buy: post.is_dealer_buy.clone(),
+                deal_token: post.deal_token.clone(),
                 amount: amount,
                 settle_currency: post.settle_currency.clone(),
                 settle_price: post.settle_price.clone(),
@@ -716,14 +724,16 @@ pub fn resolve_deal(
                 commission = calculate_commission(deal.amount.clone(), config.deal_commission.clone());
                 let payout = deal.amount.clone() - &commission;
 
+                let deal_token = deal.deal_token.clone();
+
                 cosmos_msg = Some(transfer_msg(
                     deal.dealer.clone().into_string(),
                     payout,
                     None,
                     None, 
                     RESPONSE_BLOCK_SIZE,
-                    config.deal_token.code_hash,
-                    config.deal_token.address.into_string()
+                    deal_token.code_hash,
+                    deal_token.address.into_string()
                 )?);
 
             // normal dealer sign off [Dealer selling crypto to Customer]
@@ -751,14 +761,16 @@ pub fn resolve_deal(
                 commission = calculate_commission(deal.amount.clone(), config.deal_commission.clone());
                 let payout = deal.amount.clone() - &commission;
 
+                let deal_token = deal.deal_token.clone();
+
                 cosmos_msg = Some(transfer_msg(
                     customer.into_string(),
                     payout,
                     None,
                     None, 
                     RESPONSE_BLOCK_SIZE,
-                    config.deal_token.code_hash,
-                    config.deal_token.address.into_string()
+                    deal_token.code_hash,
+                    deal_token.address.into_string()
                 )?);
 
             // Dispute, and admin decides to still resolve the case
@@ -774,14 +786,16 @@ pub fn resolve_deal(
                 commission = calculate_commission(deal.amount.clone(), config.deal_commission.clone());
                 let payout = deal.amount.clone() - &commission;
 
+                let deal_token = deal.deal_token.clone();
+
                 cosmos_msg = Some(transfer_msg(
                     receiver.into_string(),
                     payout,
                     None,
                     None, 
                     RESPONSE_BLOCK_SIZE,
-                    config.deal_token.code_hash,
-                    config.deal_token.address.into_string()
+                    deal_token.code_hash,
+                    deal_token.address.into_string()
                 )?);
             }
 
@@ -896,6 +910,8 @@ pub fn cancel_deal(
 
                 deal.state = DealState::CancelAsCustomerMissTransfer;
 
+                let deal_token = deal.deal_token.clone();
+
                 // the deal amount is already deposited by dealer, need to refund it
                 // Refund to dealer
                 cosmos_msg = Some(transfer_msg(
@@ -904,8 +920,8 @@ pub fn cancel_deal(
                     None,
                     None, 
                     RESPONSE_BLOCK_SIZE,
-                    config.deal_token.code_hash,
-                    config.deal_token.address.into_string()
+                    deal_token.code_hash,
+                    deal_token.address.into_string()
                 )?);
 
                 // archive deal into past deals
@@ -927,6 +943,8 @@ pub fn cancel_deal(
                     return Err(ContractError::DealNotExpired(deal.expiry.unwrap()));
                 }
 
+                let deal_token = deal.deal_token.clone();
+
                 // Refund to customer
                 cosmos_msg = Some(transfer_msg(
                     deal.customer.clone().into_string(),
@@ -934,8 +952,8 @@ pub fn cancel_deal(
                     None,
                     None, 
                     RESPONSE_BLOCK_SIZE,
-                    config.deal_token.code_hash,
-                    config.deal_token.address.into_string()
+                    deal_token.code_hash,
+                    deal_token.address.into_string()
                 )?);
 
                 deal.state = DealState::CancelAsDealerMissTransfer;
@@ -956,14 +974,16 @@ pub fn cancel_deal(
                     deal.customer.clone().into_string()
                 } else { deal.dealer.clone().into_string()};
 
+                let deal_token = deal.deal_token.clone();
+
                 cosmos_msg =  Some(transfer_msg(
                     recipient,
                     deal.amount,
                     None,
                     None, 
                     RESPONSE_BLOCK_SIZE,
-                    config.deal_token.code_hash,
-                    config.deal_token.address.into_string()
+                    deal_token.code_hash,
+                    deal_token.address.into_string()
                 )?);
     
                 deal.state = DealState::CancelAsDispute;
@@ -1045,14 +1065,16 @@ pub fn emergency_withdraw(
                 return Err(ContractError::Std(StdError::generic_err("No Amount to withdraw"))); 
             }
 
+            let deal_token = deal.deal_token.clone();
+
             cosmos_msg = transfer_msg(
                 info.sender.into_string(),
                 deal.amount,
                 None,
                 None, 
                 RESPONSE_BLOCK_SIZE,
-                config.deal_token.code_hash,
-                config.deal_token.address.into_string()
+                deal_token.code_hash,
+                deal_token.address.into_string()
             )?;
         },
         None => {
@@ -1119,8 +1141,8 @@ pub fn get_commission(
         None,
         None, 
         RESPONSE_BLOCK_SIZE,
-        config.deal_token.code_hash,
-        config.deal_token.address.into_string()
+        config.deal_token_a.code_hash,
+        config.deal_token_a.address.into_string()
     )?;
 
     total_revenue = Uint128::zero();

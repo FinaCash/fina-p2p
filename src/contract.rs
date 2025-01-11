@@ -25,14 +25,18 @@ pub fn instantiate(
         .map(|s| deps.api.addr_validate(s).unwrap())
         .collect();
     let moderators = admins_addr.clone();
-    let deal_token = msg.deal_token.into_valid(deps.api)?;
+    let deal_token_a = msg.deal_token_a.into_valid(deps.api)?;
+    let deal_token_b = msg.deal_token_b.into_valid(deps.api)?;
+    let deal_token_c = msg.deal_token_c.into_valid(deps.api)?;
 
     CONFIG.save(
         deps.storage,
         &Config {
             admins: admins_addr,
             deal_commission: msg.deal_commission.clone(),
-            deal_token: deal_token.clone(),
+            deal_token_a: deal_token_a.clone(),
+            deal_token_b: deal_token_b.clone(),
+            deal_token_c: deal_token_c.clone(),
             query_auth: msg.query_auth.into_valid(deps.api)?,
             governance: None,
         }
@@ -53,8 +57,23 @@ pub fn instantiate(
                 env.contract.code_hash.clone(),
                 None,
                 RESPONSE_BLOCK_SIZE,
-                deal_token.code_hash.clone(),
-                deal_token.address.into_string().clone())?
+                deal_token_a.code_hash.clone(),
+                deal_token_a.address.into_string().clone(),
+            )?,
+            register_receive_msg(
+                env.contract.code_hash.clone(),
+                None,
+                RESPONSE_BLOCK_SIZE,
+                deal_token_b.code_hash.clone(),
+                deal_token_b.address.into_string().clone(),
+            )?,
+            register_receive_msg(
+                env.contract.code_hash.clone(),
+                None,
+                RESPONSE_BLOCK_SIZE,
+                deal_token_c.code_hash.clone(),
+                deal_token_c.address.into_string().clone(),
+            )?
         ])
         .add_attribute("status", "success");
 
@@ -80,8 +99,8 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg
             query_auth,
             governance
         ),
-        ExecuteMsg::UpdateDealToken { deal_token } => {
-            execute::update_deal_token(deps, env, info, deal_token)
+        ExecuteMsg::UpdateDealToken { deal_token_a, deal_token_b, deal_token_c } => {
+            execute::update_deal_token(deps, env, info, deal_token_a, deal_token_b, deal_token_c)
         },
         ExecuteMsg::AddModerator { mod_addr } => {
             execute::add_moderator(deps, env, info, mod_addr)
@@ -101,11 +120,12 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg
         } => execute::receive(deps, env, info, sender, from, amount, msg),
         ExecuteMsg::AddPost {
             is_dealer_buy,
+            deal_token,
             amount,
             min_amount,
             settle_currency,
             settle_price
-        } => execute::add_post(deps, env, info, is_dealer_buy, amount, min_amount, settle_currency, settle_price),
+        } => execute::add_post(deps, env, info, is_dealer_buy, deal_token, amount, min_amount, settle_currency, settle_price),
         ExecuteMsg::CancelPost { post_id } => execute::cancel_post(deps, env, info, post_id),
         ExecuteMsg::EnterDeal { 
             post_id,

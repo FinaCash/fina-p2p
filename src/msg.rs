@@ -11,7 +11,9 @@ use crate::state::{Config, Deal, PaymentInfo, Post};
 pub struct InstantiateMsg {
     pub admins: Vec<String>,
     pub deal_commission: Uint128,  // in number of bps, 1 = 0.01% of the amount of the deal to be commission
-    pub deal_token: RawContract,
+    pub deal_token_a: RawContract,
+    pub deal_token_b: RawContract,
+    pub deal_token_c: RawContract,
     pub query_auth: RawContract,
 }
 
@@ -25,7 +27,9 @@ pub enum ExecuteMsg {
         governance: Option<RawContract>,
     },
     UpdateDealToken {
-        deal_token: RawContract,
+        deal_token_a: RawContract,
+        deal_token_b: RawContract,
+        deal_token_c: RawContract,
     },
     AddModerator {
         mod_addr: String,
@@ -46,6 +50,7 @@ pub enum ExecuteMsg {
     }, // must be in secret or fina
     AddPost {
         is_dealer_buy: bool,  // otherwise dealer is selling crypto
+        deal_token: RawContract,  // which token are we trading?
         amount: Uint128,  // amount of snip 20 token, e.g. 1_000_000 = 1
         min_amount: Uint128, // min amount required by dealer to open a deal
         settle_currency: String,
@@ -84,6 +89,11 @@ pub enum ExecuteAnswer {
     },
     CustomerDeposit {
         status: ResponseStatus
+    },
+    DealerDeposit {
+        status: ResponseStatus,
+        sender: Addr,
+        deposit_token: Addr,
     },
     AddPost {
         status: ResponseStatus,

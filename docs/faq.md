@@ -2,7 +2,7 @@
 
 ## Q: How many deal can one enter?
 
-A: For dealer, unlimited. For customer, only 1 deal at a time.
+A: Unlimited for both dealer and customer.
 
 ## Q: How long would the deal expiry?
 
