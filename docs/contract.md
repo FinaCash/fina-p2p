@@ -11,7 +11,7 @@ For internal review only, to avoid exploit.
 | fake_test_usdc (FFUSDC)| secret1a9xzl9m7ggynd9g9jg6xl6gpd42re3q7u60mju |
 | fake_test_scrt (FFSCRT)| secret1jnnmw0zf9tfvfqqs7guej84fvqf8397tmyrw7f |
 | fake_test_silk (FFSILK)| secret1rrdq98vmx4lavy4e0a2zpag22ehc0gjuy0ruvj |
-| p2p_contract           | secret1atmagg8w7flfrajutpfnrmdsrmkkx58hn9fdth |
+| p2p_contract           | secret10n9r9ka4xn435dhqs0349chy67n2933vaucz8c |
 
 ## List of MAINNET Preprod contract address
 
